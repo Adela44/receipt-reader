@@ -1,37 +1,50 @@
+import easyocr
 import cv2
-import pytesseract
 
-pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract'  # typical path on Ubuntu
+# Read the image
+image_path = r"D:\imagini\bonuri\bon2.jpeg"
+img = cv2.imread(image_path)
 
-image_path = "/home/ubuntu/Downloads/bon2.jpeg"
-image = cv2.imread(image_path)
+# Save the image using cv2 
+save_path = r"D:\PycharmProjects\Imagine_Original.jpeg"
+cv2.imwrite(save_path, img)
 
+#output path for the cropped receipt
+output_path = r"D:\PycharmProjects\bon1_cropped.jpeg"
 
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-cv2.imwrite("gray_image_output.jpg", gray)
+reader = easyocr.Reader(['en','ro']) #languages
+results = reader.readtext(image_path)
 
+# cropped image boundaries
+start_keywords = ['lei', 'preț', 'produse', 'pret', 'ron']
+end_keywords = ['tva', 'total tva']
 
-data = pytesseract.image_to_data(image, lang='ron', output_type=pytesseract.Output.DICT)
-
-
-start_y, end_y = None, None
-
-for i, word in enumerate(data['text']):
-    word = word.strip().lower()
-
-    if 'cod' in word and 'fiscal' in data['text'][i + 1].lower():
-        start_y = data['top'][i]
-
-    if 'total' in word:
-        end_y = data['top'][i] + data['height'][i]
+start_y = None
+end_y = None
 
 
-if start_y and end_y:
-    height, width, _ = image.shape
-    cropped = image[start_y:end_y, 0:width]
-    cv2.imwrite("bon_decupat.jpg", cropped)
-    custom_config = r'--psm 11'  # Treat the image as a single uniform block of text
-    text = pytesseract.image_to_string(cropped, lang='ron')
+for bbox, text, _ in results:
+    text_lower = text.lower()
+    if start_y is None and any(k in text_lower for k in start_keywords):
+        start_y = min([point[1] for point in bbox])  # y minim din box
+    if end_y is None and any(k in text_lower for k in end_keywords):
+        end_y = max([point[1] for point in bbox])  # y maxim din box
+
+
+if start_y is None:
+    start_y = 0
+
+
+if end_y is None:
+    end_y = img.shape[0]
+
+
+cropped_img = img[int(start_y):int(end_y), :]
+
+
+cv2.imwrite(output_path, cropped_img)
+final_results = reader.readtext(output_path)
+
+# write the text the cropped image contains
+for bbox, text, confidence in final_results:
     print(text)
-else:
-    print("Not found 'Cod fiscal' or 'TOTAL' in the image.")

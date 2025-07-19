@@ -1,1 +1,1 @@
-Here are some digital receipts.
+Here I'll add some digital receipts.

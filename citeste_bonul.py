@@ -3,8 +3,10 @@ import cv2
 import re
 
 # Read the image
-image_path = r"D:\imagini\bonuri\bon2.jpeg"
+image_path = r"D:\imagini\bonuri\bon1.jpeg"
 img = cv2.imread(image_path)
+if img is None:
+    raise ValueError("Failed to load image. Check file path or format.")
 
 # Save the image using cv2
 save_path = r"D:\PycharmProjects\Imagine_Original.jpeg"
@@ -38,7 +40,11 @@ if start_y is None:
 if end_y is None:
     end_y = img.shape[0]
 
+
+
 cropped_img = img[int(start_y):int(end_y), :]
+if cropped_img.size == 0:
+    raise ValueError("Cropped image is empty. Check your crop dimensions.")
 
 cv2.imwrite(output_path, cropped_img)
 final_results = reader.readtext(output_path)
@@ -67,6 +73,7 @@ for _, text, _ in final_results:
                     name_lower != "lei"
                     and "sub" not in name_lower
                     and "tva" not in name_lower
+                    and "kg" not in name_lower
             )
             ):
               products.append((product_name, clean_text.replace(" ", "")))
